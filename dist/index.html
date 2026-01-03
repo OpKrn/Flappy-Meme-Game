@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>🎮 Flappy Meme Game 🎮</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        html, body {
+            width: 100%;
+            height: 100%;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background: #0f0f1e;
+        }
+
+        #root {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .game-container {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            background: linear-gradient(to bottom, #0f0f1e, #1a1a2e);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #e0e0e0;
+        }
+
+        .header h1 {
+            font-size: 3em;
+            margin: 10px 0;
+            text-shadow: 4px 4px 0 rgba(0,0,0,0.5);
+        }
+
+        .score-display {
+            display: flex;
+            gap: 40px;
+            justify-content: center;
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #b0b0b0;
+            margin: 15px 0;
+        }
+
+        .game-area {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: auto;
+            border: 4px solid #2a2a3e;
+            border-radius: 8px;
+            background: linear-gradient(to bottom, #1a1a2e, #0f1419);
+        }
+
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #e0e0e0;
+            z-index: 100;
+        }
+
+        .overlay.hidden {
+            display: none !important;
+        }
+
+        .overlay-emoji {
+            font-size: 5em;
+            margin-bottom: 20px;
+        }
+
+        .overlay-title {
+            font-size: 2em;
+            font-weight: bold;
+            margin: 20px 0;
+        }
+
+        .start-btn, .retry-btn {
+            background-color: #2a2a3e;
+            color: #e0e0e0;
+            border: 2px solid #404055;
+            padding: 15px 30px;
+            font-size: 1.2em;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 15px 0;
+            transition: all 0.3s;
+        }
+
+        .start-btn:hover, .retry-btn:hover {
+            background-color: #3a3a4e;
+        }
+
+        .overlay-text {
+            font-size: 1.2em;
+            color: #b0b0b0;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-top: 20px;
+            max-width: 900px;
+        }
+
+        button, label {
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            border: 2px solid;
+            font-size: 1em;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background-color: #2a2a3e;
+            color: #e0e0e0;
+            border-color: #404055;
+        }
+
+        .btn-primary:hover {
+            background-color: #3a3a4e;
+        }
+
+        .btn-secondary {
+            background-color: #3a3a4e;
+            color: #e0e0e0;
+            border-color: #505065;
+        }
+
+        .btn-secondary:hover {
+            background-color: #4a4a5e;
+        }
+
+        .btn-danger {
+            background-color: #4a2a2a;
+            color: #e0e0e0;
+            border-color: #6a4a4a;
+        }
+
+        .btn-danger:hover {
+            background-color: #5a3a3a;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        label {
+            display: inline-block;
+        }
+
+        .info {
+            margin-top: 20px;
+            color: #a0a0a0;
+            font-size: 0.9em;
+            text-align: center;
+        }
+
+        .text-input-area {
+            display: none;
+            margin-top: 15px;
+            gap: 10px;
+            max-width: 500px;
+        }
+
+        .text-input-area.show {
+            display: flex;
+        }
+
+        .text-input-area input {
+            flex: 1;
+            padding: 10px;
+            border-radius: 8px;
+            border: 2px solid #404055;
+            background-color: #2a2a3e;
+            color: #e0e0e0;
+            font-size: 1em;
+            font-weight: bold;
+        }
+
+        .text-input-area button {
+            padding: 10px 15px;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script>
+        "use strict";
+
+        const MEME_FACES = [
+            { emoji: "😎", name: "Cool Doge" },
+            { emoji: "🐸", name: "Pepe" },
+            { emoji: "💪", name: "Chad" },
+            { emoji: "😭", name: "Crying Wojak" },
+            { emoji: "🤡", name: "Clown" },
+            { emoji: "💀", name: "Skull" },
+            { emoji: "🗿", name: "Moai" },
+            { emoji: "🧠", name: "Brain" },
+        ];
+
+        // Game state
+        let gameState = "start";
+        let score = 0;
+        let highScore = localStorage.getItem('flappyMemeHighScore') || 0;
+        let currentMeme = 0;
+        let currentTheme = "night";
+        let customText = "";
+        let customImage = null;
+        let customImageObj = null; // Cache for loaded image
+        let showTextInput = false;
+        let customMusic = null;
+
+        // Bird
+        let bird = {
+            x: 100,
+            y: 250,
+            velocity: 0,
+            radius: 25,
+            gravity: 0.5,
+            jumpStrength: -9
+        };
+
+        // Pipes
+        let pipes = [];
+        let frameCount = 0;
+        let gameLoopId = null;
+        let audioContext = null;
+        let musicAudio = null;
+        let canvasRef = null;
+
+        function playSound(type) {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+
+            const ctx = audioContext;
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+
+            if (type === "jump") {
+                osc.frequency.value = 400;
+                gain.gain.setValueAtTime(0.1, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
+                osc.start(ctx.currentTime);
+                osc.stop(ctx.currentTime + 0.1);
+            } else if (type === "score") {
+                osc.frequency.value = 800;
+                gain.gain.setValueAtTime(0.1, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2);
+                osc.start(ctx.currentTime);
+                osc.stop(ctx.currentTime + 0.2);
+            } else if (type === "die") {
+                osc.frequency.setValueAtTime(400, ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(100, ctx.currentTime + 0.3);
+                gain.gain.setValueAtTime(0.2, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+                osc.start(ctx.currentTime);
+                osc.stop(ctx.currentTime + 0.3);
+            }
+        }
+
+        function playMusic() {
+            if (customMusic && !musicAudio) {
+                musicAudio = new Audio(customMusic);
+                musicAudio.loop = true;
+                musicAudio.volume = 0.3;
+                musicAudio.play().catch(e => console.log('Music error:', e));
+            }
+        }
+
+        function stopMusic() {
+            if (musicAudio) {
+                musicAudio.pause();
+                musicAudio.currentTime = 0;
+                musicAudio = null;
+            }
+        }
+
+        function handleMusicUpload(e) {
+            const file = e.target.files?.[0];
+            if (file && file.type.startsWith("audio/")) {
+                customMusic = URL.createObjectURL(file);
+            }
+        }
+
+        function handleImageUpload(e) {
+            const file = e.target.files?.[0];
+            if (file && file.type.startsWith("image/")) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    customImage = event.target.result;
+                    // Load image and cache it
+                    const img = new Image();
+                    img.onload = () => {
+                        customImageObj = img;
+                    };
+                    img.src = event.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function jump() {
+            if (gameState === "start") {
+                startGame();
+            } else if (gameState === "playing") {
+                bird.velocity = bird.jumpStrength;
+                playSound("jump");
+            }
+        }
+
+        function startGame() {
+            bird = { x: 100, y: 250, velocity: 0, radius: 25, gravity: 0.5, jumpStrength: -9 };
+            pipes = [];
+            frameCount = 0;
+            score = 0;
+            gameState = "playing";
+            render();
+            playMusic();
+            gameLoop();
+        }
+
+        function gameLoop() {
+            canvasRef = document.getElementById("gameCanvas");
+            if (!canvasRef) return;
+
+            const ctx = canvasRef.getContext("2d");
+
+            const update = () => {
+                if (gameState !== "playing") return;
+
+                frameCount++;
+                bird.velocity += bird.gravity;
+                bird.y += bird.velocity;
+
+                // Spawn pipes
+                if (frameCount % 90 === 0) {
+                    const gapY = Math.random() * (500 - 180 - 100) + 50;
+                    pipes.push({ x: 800, gapY: gapY, scored: false });
+                }
+
+                // Update pipes
+                for (let i = pipes.length - 1; i >= 0; i--) {
+                    pipes[i].x -= 3;
+
+                    // Check scoring
+                    if (!pipes[i].scored && pipes[i].x + 60 < bird.x - bird.radius) {
+                        pipes[i].scored = true;
+                        score++;
+                        if (score > highScore) {
+                            highScore = score;
+                            localStorage.setItem('flappyMemeHighScore', highScore);
+                        }
+                        playSound("score");
+                    }
+
+                    // Check collision
+                    if (
+                        bird.x + bird.radius > pipes[i].x &&
+                        bird.x - bird.radius < pipes[i].x + 60 &&
+                        (bird.y - bird.radius < pipes[i].gapY || bird.y + bird.radius > pipes[i].gapY + 180)
+                    ) {
+                        endGame();
+                        return;
+                    }
+
+                    // Remove off-screen pipes
+                    if (pipes[i].x < -60) {
+                        pipes.splice(i, 1);
+                    }
+                }
+
+                // Check boundaries
+                if (bird.y - bird.radius < 0 || bird.y + bird.radius > 500) {
+                    endGame();
+                }
+            };
+
+            const draw = () => {
+                // Background
+                const bg = currentTheme === "night" 
+                    ? ["#1a1a2e", "#16213e", "#0f1419"]
+                    : ["#87CEEB", "#B0E2FF", "#E0F6FF"];
+
+                const gradient = ctx.createLinearGradient(0, 0, 0, 500);
+                gradient.addColorStop(0, bg[0]);
+                gradient.addColorStop(0.5, bg[1]);
+                gradient.addColorStop(1, bg[2]);
+                ctx.fillStyle = gradient;
+                ctx.fillRect(0, 0, 800, 500);
+
+                // Particles (stars or clouds)
+                const particleColor = currentTheme === "night" ? "rgba(255, 255, 255, 0.8)" : "rgba(255, 255, 255, 0.9)";
+                ctx.fillStyle = particleColor;
+                for (let i = 0; i < 50; i++) {
+                    const x = ((frameCount * 0.2 + i * 123) % 850) - 50;
+                    const y = (i * 67) % 500;
+                    if (currentTheme === "night") {
+                        ctx.fillRect(x, y, 2, 2);
+                    } else {
+                        ctx.beginPath();
+                        ctx.arc(x, y, 15, 0, Math.PI * 2);
+                        ctx.arc(x + 20, y, 20, 0, Math.PI * 2);
+                        ctx.arc(x + 40, y, 15, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                }
+
+                // Pipes
+                const pipeColors = currentTheme === "night" 
+                    ? ["#2a2a3e", "#1f1f2e"]
+                    : ["#90EE90", "#76D676"];
+                const pipeBorder = currentTheme === "night" ? "#404055" : "#5CB85C";
+
+                for (const pipe of pipes) {
+                    const pipeGrad = ctx.createLinearGradient(pipe.x, 0, pipe.x + 60, 0);
+                    pipeGrad.addColorStop(0, pipeColors[0]);
+                    pipeGrad.addColorStop(1, pipeColors[1]);
+
+                    ctx.fillStyle = pipeGrad;
+                    ctx.strokeStyle = pipeBorder;
+                    ctx.lineWidth = 3;
+
+                    // Top pipe
+                    ctx.fillRect(pipe.x, 0, 60, pipe.gapY);
+                    ctx.strokeRect(pipe.x, 0, 60, pipe.gapY);
+
+                    // Bottom pipe
+                    ctx.fillRect(pipe.x, pipe.gapY + 180, 60, 500 - pipe.gapY - 180);
+                    ctx.strokeRect(pipe.x, pipe.gapY + 180, 60, 500 - pipe.gapY - 180);
+                }
+
+                // Bird
+                ctx.save();
+                ctx.translate(bird.x, bird.y);
+                ctx.rotate(Math.min(bird.velocity * 0.05, Math.PI / 4));
+                
+                if (customText.trim()) {
+                    ctx.font = "bold 35px Arial";
+                    ctx.textAlign = "center";
+                    ctx.textBaseline = "middle";
+                    ctx.fillStyle = currentTheme === "night" ? "#e0e0e0" : "#2c3e50";
+                    ctx.lineWidth = 3;
+                    ctx.strokeText(customText, 0, 0);
+                    ctx.fillText(customText, 0, 0);
+                } else if (customImageObj) {
+                    // Use cached image
+                    ctx.drawImage(customImageObj, -25, -25, 50, 50);
+                } else {
+                    ctx.font = "50px Arial";
+                    ctx.textAlign = "center";
+                    ctx.textBaseline = "middle";
+                    ctx.fillText(MEME_FACES[currentMeme].emoji, 0, 0);
+                }
+                ctx.restore();
+            };
+
+            const mainLoop = () => {
+                update();
+                draw();
+
+                if (gameState === "playing") {
+                    gameLoopId = requestAnimationFrame(mainLoop);
+                }
+            };
+
+            gameLoopId = requestAnimationFrame(mainLoop);
+        }
+
+        function endGame() {
+            gameState = "gameOver";
+            stopMusic();
+            playSound("die");
+            render();
+        }
+
+        function toggleTheme() {
+            currentTheme = currentTheme === "night" ? "day" : "night";
+            render();
+        }
+
+        function changeMeme() {
+            currentMeme = (currentMeme + 1) % MEME_FACES.length;
+            customImage = null;
+            customImageObj = null;
+            render();
+        }
+
+        function resetCustom() {
+            customImage = null;
+            customImageObj = null;
+            customText = "";
+            render();
+        }
+
+        function toggleTextInput() {
+            showTextInput = !showTextInput;
+            render();
+        }
+
+        function submitText() {
+            const textInput = document.getElementById("textInputField");
+            if (textInput && textInput.value.trim()) {
+                customText = textInput.value;
+                showTextInput = false;
+                render();
+            }
+        }
+
+        function render() {
+            const root = document.getElementById("root");
+            const displayChar = customText.trim() ? customText : (customImage ? "🖼️" : MEME_FACES[currentMeme].emoji);
+
+            root.innerHTML = `
+                <div class="game-container">
+                    <div class="header">
+                        <h1>🎮 FLAPPY MEME 🎮</h1>
+                        <div class="score-display">
+                            <div>Score: ${score}</div>
+                            <div>High: ${highScore}</div>
+                        </div>
+                        <div style="color: #a0a0a0; font-size: 0.9em; margin-top: 10px;">
+                            Playing as: ${customText ? '"' + customText + '" ✍️' : (customImage ? "Custom Image 🖼️" : MEME_FACES[currentMeme].name + " " + MEME_FACES[currentMeme].emoji)}
+                        </div>
+                    </div>
+
+                    <div class="game-area">
+                        <canvas id="gameCanvas" width="800" height="500"></canvas>
+                        
+                        <div id="startOverlay" class="overlay ${gameState !== 'start' ? 'hidden' : ''}">
+                            <div class="overlay-emoji">${displayChar}</div>
+                            <div class="overlay-title">Flappy Meme</div>
+                            <button class="start-btn" onclick="startGame()">▶️ START GAME</button>
+                            <div class="overlay-text">Click START or Press SPACE to play</div>
+                        </div>
+
+                        <div id="gameOverOverlay" class="overlay ${gameState !== 'gameOver' ? 'hidden' : ''}">
+                            <div class="overlay-emoji">💀</div>
+                            <div class="overlay-title">GAME OVER!</div>
+                            <div class="overlay-text" style="font-size: 1.5em; margin: 20px 0;">Score: ${score}</div>
+                            <button class="retry-btn" onclick="startGame()">🔄 RETRY</button>
+                        </div>
+                    </div>
+
+                    <div class="controls">
+                        <button class="btn-primary" onclick="toggleTheme()">
+                            ${currentTheme === "night" ? "☀️ Day" : "🌙 Night"}
+                        </button>
+
+                        ${!customImage && !customText.trim() ? `
+                            <button class="btn-primary" onclick="changeMeme();">
+                                Change Meme ${MEME_FACES[currentMeme].emoji}
+                            </button>
+                        ` : ''}
+
+                        <button class="btn-primary" onclick="toggleTextInput()">✍️ Text</button>
+
+                        <label class="btn-secondary">
+                            📸 Upload Face
+                            <input type="file" accept="image/*" onchange="handleImageUpload(event)">
+                        </label>
+
+                        <label class="btn-secondary">
+                            🎵 Upload Music
+                            <input type="file" accept="audio/*" onchange="handleMusicUpload(event)">
+                        </label>
+
+                        ${customImage || customText.trim() ? `
+                            <button class="btn-danger" onclick="resetCustom()">❌ Reset to Meme</button>
+                        ` : ''}
+                    </div>
+
+                    ${showTextInput ? `
+                        <div class="text-input-area show">
+                            <input type="text" id="textInputField" placeholder="Enter text..." maxlength="10" value="${customText}">
+                            <button class="btn-secondary" onclick="submitText()">✅ Set</button>
+                        </div>
+                    ` : ''}
+
+                    <div class="info">
+                        <div>Desktop: Press SPACE to jump</div>
+                        <div>Mobile: Tap canvas to jump</div>
+                        ${customMusic ? '<div>🎵 Music ready!</div>' : ''}
+                    </div>
+                </div>
+            `;
+
+            // Event listeners
+            const canvas = document.getElementById("gameCanvas");
+            if (canvas) {
+                canvas.addEventListener("click", jump);
+            }
+
+            const textInput = document.getElementById("textInputField");
+            if (textInput) {
+                textInput.addEventListener("keypress", (e) => {
+                    if (e.key === "Enter") submitText();
+                });
+            }
+        }
+
+        // Initialize
+        window.addEventListener("load", render);
+        window.addEventListener("keydown", (e) => {
+            if (e.code === "Space") {
+                e.preventDefault();
+                jump();
+            }
+        });
+    </script>
+</body>
+</html>
